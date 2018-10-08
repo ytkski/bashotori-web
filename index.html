@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="content-language" content="ja">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store">
+    <title>BashoTori 予約フォーム</title>
+
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="./css/bashotori-liff.css">
+    <script type="text/javascript" src="./js/jquery.min.js"></script>
+    <script type="text/javascript" src="./js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+    <script src="https://d.line-scdn.net/liff/1.0/sdk.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script type="text/javascript" src="./js/bashotori-liff.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class='col-sm-3'>
+                <h4>
+                    <div id="placeName">取得しています...</div>
+                </h4>
+                <div class="form-group">
+                    <div class="input-group">
+                        <input id="flatpickr" type="text" placeholder="日付を選択してください" readonly="readonly" />
+                    </div>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" id="showAvailableTimeButton" class="btn btn-primary margin-bottom" disabled
+                        onclick="showAvailableTime()">空き状況を照会する</button>
+                    <button type="button" id="showReservedTimeButton" class="btn btn-outline-primary margin-bottom margin-left"
+                        disabled onclick="showReservedTime()">予約の確認</button>
+                </div>
+                <button type="button" id="openOfficialSiteButton" class="btn btn-outline-success" onclick="openOfficialSite()">BashoTori
+                    公式サイト</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="availabilityModal" tabindex="-1" role="dialog" aria-labelledby="availabilityModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="availabilityModalTitle">取得しています...</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="availabilityModalBody">取得しています...</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">閉じる</button>
+                    <button type="button" id="reserveSelectedDateButton" class="btn btn-primary" data-dismiss="modal"
+                        disabled onClick="confirmReservation()">選択した時間を予約する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="reservedTimeModal" tabindex="-1" role="dialog" aria-labelledby="reservedTimeModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reservedTimeModalTitle">取得しています...</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="reservedTimeModalBody">取得しています...</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">閉じる</button>
+                    <button type="button" id="cancelSelectedDateButton" class="btn btn-danger" data-dismiss="modal"
+                        disabled onClick="confirmCancellation()">予約をキャンセルする</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="reserveConfirmationModal" tabindex="-1" role="dialog" aria-labelledby="reserveConfirmationModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reserveConfirmationTitleLabel">確認</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>予約するには<span id="price">(計算中...)</span>円かかります。<br>LINE Payで購入しますか？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">いいえ</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onClick="reserve()">はい</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="cancelConfirmationModal" tabindex="-1" role="dialog" aria-labelledby="cancelConfirmationModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelConfirmationTitleLabel">確認</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p><span id="selectedReservation">(取得中...)</span> の予約をキャンセルしますか？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">いいえ</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onClick="cancelReservation()">はい</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="cancelCompletedModal" tabindex="-1" role="dialog" aria-labelledby="cancelCompletedModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">実行結果</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>予約をキャンセルしました。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
